@@ -224,35 +224,74 @@ else:
     
     # Conteúdo principal
     if st.session_state.game_started:
-        # Mostrar game usando components.html
-        game_url = f"https://pinball.streamlit.app:{LOCAL_GAME_SERVER_PORT}/{GAME_HTML_ENTRY_POINT}"
-        components.html(f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                body, html {{
-                    margin: 0;
-                    padding: 0;
-                    width: 100vw;
-                    height: calc(100vh - 120px);
-                    overflow: hidden;
-                    background-color: {PAGE_BACKGROUND_COLOR};
-                }}
-                iframe {{
-                    width: 100vw;
-                    height: 100%;
-                    border: none;
-                    margin: 0;
-                    padding: 0;
-                }}
-            </style>
-        </head>
-        <body>
-            <iframe src="{game_url}" allowfullscreen></iframe>
-        </body>
-        </html>
-        """, height=680, scrolling=False)
+        # Detectar se está em produção ou local
+        is_production = 'streamlit.app' in os.environ.get('HOSTNAME', '') or 'STREAMLIT_SERVER_PORT' in os.environ
+        
+        if is_production:
+            # Em produção, servir o HTML diretamente via components.html
+            try:
+                with open(path_to_index_html, 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+                
+                # Ler todos os arquivos necessários e embutir no HTML
+                game_dir = Path(game_files_directory)
+                
+                # Substituir referências a arquivos JS/CSS por conteúdo inline
+                import re
+                
+                # Encontrar e substituir scripts
+                script_pattern = r'<script[^>]*src="([^"]+)"[^>]*></script>'
+                for match in re.finditer(script_pattern, html_content):
+                    script_src = match.group(1)
+                    script_path = game_dir / script_src
+                    if script_path.exists():
+                        with open(script_path, 'r', encoding='utf-8') as js_file:
+                            js_content = js_file.read()
+                        html_content = html_content.replace(match.group(0), f'<script>{js_content}</script>')
+                
+                # Encontrar e substituir CSS
+                css_pattern = r'<link[^>]*href="([^"]+\.css)"[^>]*>'
+                for match in re.finditer(css_pattern, html_content):
+                    css_src = match.group(1)
+                    css_path = game_dir / css_src
+                    if css_path.exists():
+                        with open(css_path, 'r', encoding='utf-8') as css_file:
+                            css_content = css_file.read()
+                        html_content = html_content.replace(match.group(0), f'<style>{css_content}</style>')
+                
+                components.html(html_content, height=680, scrolling=False)
+            except Exception as e:
+                st.error(f"Erro ao carregar o jogo: {e}")
+        else:
+            # Em local, usar iframe com localhost
+            game_url = f"http://localhost:{LOCAL_GAME_SERVER_PORT}/{GAME_HTML_ENTRY_POINT}"
+            components.html(f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body, html {{
+                        margin: 0;
+                        padding: 0;
+                        width: 100vw;
+                        height: calc(100vh - 120px);
+                        overflow: hidden;
+                        background-color: {PAGE_BACKGROUND_COLOR};
+                    }}
+                    iframe {{
+                        width: 100vw;
+                        height: 100%;
+                        border: none;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                </style>
+            </head>
+            <body>
+                <iframe src="{game_url}" allowfullscreen></iframe>
+            </body>
+            </html>
+            """, height=680, scrolling=False)
     else:
         # Mostrar imagem do jogo
         st.markdown(f"""
