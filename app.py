@@ -183,7 +183,7 @@ if st.session_state.game_started:
     <head>
         <meta charset="utf-8">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>🕹️3D Pinball - Space Cadet</title>
+        <title>3D Pinball - Space Cadet</title>
         <style>
             :root {{
                 --ActiveBorder: rgb(212, 208, 200);
@@ -231,8 +231,8 @@ if st.session_state.game_started:
             canvas.emscripten {{
                 border: 0 none;
                 background-color: #000;
-                width: 100%;
-                height: 100%;
+                width: 80%;
+                height: 80%;
                 max-width: 100vw;
                 max-height: 100vh;
             }}
@@ -289,11 +289,11 @@ if st.session_state.game_started:
     <body>
         <div class="window active">
             <div class="titlebar">
-                <span class="titlebar-title">🕹️3D Pinball - Space Cadet</span>
+                <span class="titlebar-title">3D Pinball - Space Cadet</span>
             </div>
             <div id="status">Carregando...</div>
             <div>
-                <progress id="progress" value="0" max="30" style="display: none;"></progress>
+                <progress id="progress" value="0" max="100" style="display: none;"></progress>
             </div>
             <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
         </div>
