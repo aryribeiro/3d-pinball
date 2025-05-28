@@ -225,7 +225,7 @@ else:
     # Conteúdo principal
     if st.session_state.game_started:
         # Mostrar game usando components.html
-        game_url = f"https://pinball.streamlit.app/:{LOCAL_GAME_SERVER_PORT}/{GAME_HTML_ENTRY_POINT}"
+        game_url = f"http://localhost:{LOCAL_GAME_SERVER_PORT}/{GAME_HTML_ENTRY_POINT}"
         components.html(f"""
         <!DOCTYPE html>
         <html>
@@ -264,7 +264,7 @@ else:
 st.markdown("""
 <div style="text-align: center;">
   <div style="color: white;">
-  💬 Por <strong>Ary Ribeiro</strong>. Obs.: fork do Alula. Código original no GitHub: 
+  💬 Por <strong>Ary Ribeiro</strong>. Obs.: fork da Alula. Código original no GitHub: 
   <a href="https://github.com/alula/SpaceCadetPinball/tree/gh-pages" style="color: white;">AQUI</a><br>
   <em>Obs.: Use o mouse p/ controlar</em>
 </div>
