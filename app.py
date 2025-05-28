@@ -231,8 +231,8 @@ if st.session_state.game_started:
             canvas.emscripten {{
                 border: 0 none;
                 background-color: #000;
-                width: 90%;
-                height: 90%;
+                width: 100%;
+                height: 100%;
                 max-width: 100vw;
                 max-height: 100vh;
             }}
@@ -246,8 +246,8 @@ if st.session_state.game_started:
                 padding-right: 0;
                 margin: 0;
                 display: flex;
-                width: 100%;
-                height: 100vh;
+                width: 80%;
+                height: 80vh;
             }}
             
             .titlebar {{
