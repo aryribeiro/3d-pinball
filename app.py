@@ -231,8 +231,8 @@ if st.session_state.game_started:
             canvas.emscripten {{
                 border: 0 none;
                 background-color: #000;
-                width: 70%;
-                height: 100%;
+                width: 90%;
+                height: 90%;
                 max-width: 100vw;
                 max-height: 100vh;
             }}
