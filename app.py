@@ -4,7 +4,7 @@ import base64
 from pathlib import Path
 
 # --- Configurações Globais ---
-APP_TITLE = "🪩 3D Pinball | Space Cadet"
+APP_TITLE = "🕹️3D Pinball | Space Cadet"
 PAGE_BACKGROUND_COLOR = "#3A6EA5"
 
 # --- Estado da Sessão ---
@@ -41,8 +41,8 @@ st.markdown(f"""
 <style>
     html, body, [data-testid="stAppViewContainer"], .main {{
         background-color: {PAGE_BACKGROUND_COLOR} !important;
-        height: 100vh !important;
-        width: 100vw !important;
+        height: 80vh !important;
+        width: 800vw !important;
         margin: 0 !important;
         padding: 0 !important;
         overflow-x: hidden !important;
@@ -170,7 +170,7 @@ st.markdown(f"""
 # Botão centralizado
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
-    if st.button("🚀 INICIAR JOGO", key="start_game"):
+    if st.button("INICIAR JOGO", key="start_game"):
         st.session_state.game_started = True
         st.rerun()
 
@@ -183,7 +183,7 @@ if st.session_state.game_started:
     <head>
         <meta charset="utf-8">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>3D Pinball for Windows - Space Cadet</title>
+        <title>🕹️3D Pinball - Space Cadet</title>
         <style>
             :root {{
                 --ActiveBorder: rgb(212, 208, 200);
@@ -289,7 +289,7 @@ if st.session_state.game_started:
     <body>
         <div class="window active">
             <div class="titlebar">
-                <span class="titlebar-title">3D Pinball for Windows - Space Cadet</span>
+                <span class="titlebar-title">🕹️3D Pinball - Space Cadet</span>
             </div>
             <div id="status">Carregando...</div>
             <div>
