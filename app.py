@@ -5,9 +5,9 @@ import base64
 import os
 
 # --- Configurações Globais ---
-APP_TITLE = "🪩 3D Pinball | Space Cadet"
+APP_TITLE = "🕹️ 3D Pinball | Space Cadet"
 # URL para o jogo hospedado publicamente (GitHub Pages da Alula para SpaceCadetPinball)
-HOSTED_GAME_URL = "https://alula.github.io/SpaceCadetPinball/"
+HOSTED_GAME_URL = "https://pinball.streamlit.app/"
 
 # Fundo azul escuro do game original
 PAGE_BACKGROUND_COLOR = "#3A6EA5"
@@ -217,7 +217,7 @@ else:
 st.markdown("""
 <div style="text-align: center; padding-top: 20px; padding-bottom: 20px;">
   <div style="color: white; font-size: 14px;">
-  💬 Por <strong>Ary Ribeiro</strong>. Obs.: fork da Alula. Código original no GitHub: 
+  🕹️ Por <strong>Ary Ribeiro</strong>. Obs.: fork da Alula. Código original no GitHub: 
   <a href="https://github.com/alula/SpaceCadetPinball/tree/gh-pages" target="_blank" style="color: white; text-decoration: underline;">AQUI</a><br>
   <em>Obs.: Use o mouse para controlar os flippers e lançar a bola.</em>
 </div>
