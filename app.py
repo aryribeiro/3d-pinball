@@ -246,8 +246,8 @@ if st.session_state.game_started:
                 padding-right: 0;
                 margin: 30px auto;
                 display: auto;
-                width: 70%;
-                height: 90vh;
+                width: 50%;
+                height: 95vh;
             }}
             
             .titlebar {{
