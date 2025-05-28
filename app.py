@@ -84,7 +84,7 @@ st.markdown(f"""
     }}
     
     .game-content {{
-        display: auto;
+        display: flex;
         justify-content: center;
         align-items: center;
         min-height: calc(100vh - 120px);
