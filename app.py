@@ -245,8 +245,8 @@ if st.session_state.game_started:
                 box-shadow: -0.5px -0.5px 0 0.5px var(--ButtonHilight), 0 0 0 1px var(--ButtonShadow), -0.5px -0.5px 0 1.5px var(--ButtonLight), 0 0 0 2px var(--ButtonDkShadow);
                 padding-right: 0;
                 margin: 0;
-                display: block;
-                width: 50%;
+                display: center;
+                width: 70%;
                 height: 100vh;
             }}
             
