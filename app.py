@@ -1,27 +1,16 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import http.server
-import socketserver
-import threading
 from pathlib import Path
-from functools import partial
-import time
-import os
 import base64
+import os
+import re
 
 # --- Configurações Globais ---
 GAME_HTML_ENTRY_POINT = "index.html"
-LOCAL_GAME_SERVER_PORT = 8001
 APP_TITLE = "🪩 3D Pinball | Space Cadet"
-
-# Fundo azul escuro do game original
 PAGE_BACKGROUND_COLOR = "#3A6EA5"
 
 # --- Estado da Sessão ---
-if 'python_server_thread_launched_final_ux' not in st.session_state:
-    st.session_state.python_server_thread_launched_final_ux = False
-if 'python_server_init_error_final_ux' not in st.session_state:
-    st.session_state.python_server_init_error_final_ux = None
 if 'game_started' not in st.session_state:
     st.session_state.game_started = False
 
@@ -33,27 +22,18 @@ def get_base64_image(image_path):
     except:
         return None
 
-# --- Função do Servidor HTTP (Thread Separada) ---
-def start_http_server_thread(directory_to_serve: str, port: int):
-    class QuietHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-        def log_message(self, format, *args):
-            pass
-
-    handler = partial(QuietHTTPRequestHandler, directory=directory_to_serve)
+# --- Função para converter arquivo para base64 ---
+def get_base64_file(file_path):
     try:
-        socketserver.TCPServer.allow_reuse_address = True
-        with socketserver.TCPServer(("", port), handler) as httpd:
-            print(f"SUCCESS: Local HTTP server started on port {port}")
-            httpd.serve_forever()
-    except Exception as e:
-        error_msg = f"PYTHON_SERVER_ERROR: Failed to start HTTP server on port {port}: {e}"
-        print(error_msg)
-        st.session_state.python_server_init_error_final_ux = error_msg
+        with open(file_path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except:
+        return None
 
 # --- Configuração da Página Streamlit ---
 st.set_page_config(page_title=APP_TITLE, layout="centered", initial_sidebar_state="collapsed")
 
-# Converter imagem para base64
+# Diretório dos arquivos do jogo
 game_files_directory = str(Path(__file__).resolve().parent)
 mesa_image_path = Path(game_files_directory) / "mesa.png"
 mesa_base64 = get_base64_image(mesa_image_path)
@@ -151,14 +131,6 @@ st.markdown(f"""
         align-items: center !important;
     }}
     
-    .game-iframe {{
-        width: 100vw !important;
-        height: calc(100vh - 120px) !important;
-        border: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-    
     .error-message {{
         color: #FF6B6B;
         background: rgba(255, 107, 107, 0.1);
@@ -171,10 +143,9 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Lógica Principal ---
+# --- Verificar se arquivo existe ---
 path_to_index_html = Path(game_files_directory) / GAME_HTML_ENTRY_POINT
 
-# Verificar se arquivo existe
 if not path_to_index_html.is_file():
     st.markdown(f"""
     <div class="error-message">
@@ -184,121 +155,148 @@ if not path_to_index_html.is_file():
     """, unsafe_allow_html=True)
     st.stop()
 
-# Iniciar servidor se necessário
-if not st.session_state.python_server_thread_launched_final_ux:
-    st.session_state.python_server_thread_launched_final_ux = True
-    st.session_state.python_server_init_error_final_ux = None
-    
-    server_thread = threading.Thread(
-        target=start_http_server_thread,
-        args=(game_files_directory, LOCAL_GAME_SERVER_PORT),
-        daemon=True
-    )
-    server_thread.start()
-    time.sleep(1)
-    st.rerun()
+# --- Interface Principal ---
+st.markdown(f"""
+<div class="game-header">
+    <h1 class="game-title">{APP_TITLE}</h1>
+</div>
+""", unsafe_allow_html=True)
 
-# Interface principal
-if st.session_state.python_server_init_error_final_ux:
-    st.markdown(f"""
-    <div class="error-message">
-        <h2>Erro ao iniciar servidor</h2>
-        <p>{st.session_state.python_server_init_error_final_ux}</p>
-        <button onclick="location.reload()" class="start-button">Tentar Novamente</button>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    # Header fixo com título e botão
-    st.markdown(f"""
-    <div class="game-header">
-        <h1 class="game-title">{APP_TITLE}</h1>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Botão centralizado no header
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        if st.button("🚀 INICIAR JOGO", key="start_game"):
-            st.session_state.game_started = True
-            st.rerun()
-    
-    # Conteúdo principal
-    if st.session_state.game_started:
-        # Detectar se está em produção ou local
-        is_production = 'streamlit.app' in os.environ.get('HOSTNAME', '') or 'STREAMLIT_SERVER_PORT' in os.environ
+# Botão centralizado no header
+col1, col2, col3 = st.columns([1, 1, 1])
+with col2:
+    if st.button("🚀 INICIAR JOGO", key="start_game"):
+        st.session_state.game_started = True
+        st.rerun()
+
+# Conteúdo principal
+if st.session_state.game_started:
+    try:
+        # Ler o arquivo HTML principal
+        with open(path_to_index_html, 'r', encoding='utf-8') as f:
+            html_content = f.read()
         
-        if is_production:
-            # Em produção, servir o HTML diretamente via components.html
-            try:
-                with open(path_to_index_html, 'r', encoding='utf-8') as f:
-                    html_content = f.read()
-                
-                # Ler todos os arquivos necessários e embutir no HTML
-                game_dir = Path(game_files_directory)
-                
-                # Substituir referências a arquivos JS/CSS por conteúdo inline
-                import re
-                
-                # Encontrar e substituir scripts
-                script_pattern = r'<script[^>]*src="([^"]+)"[^>]*></script>'
-                for match in re.finditer(script_pattern, html_content):
-                    script_src = match.group(1)
-                    script_path = game_dir / script_src
-                    if script_path.exists():
-                        with open(script_path, 'r', encoding='utf-8') as js_file:
-                            js_content = js_file.read()
-                        html_content = html_content.replace(match.group(0), f'<script>{js_content}</script>')
-                
-                # Encontrar e substituir CSS
-                css_pattern = r'<link[^>]*href="([^"]+\.css)"[^>]*>'
-                for match in re.finditer(css_pattern, html_content):
-                    css_src = match.group(1)
-                    css_path = game_dir / css_src
-                    if css_path.exists():
-                        with open(css_path, 'r', encoding='utf-8') as css_file:
-                            css_content = css_file.read()
-                        html_content = html_content.replace(match.group(0), f'<style>{css_content}</style>')
-                
-                components.html(html_content, height=680, scrolling=False)
-            except Exception as e:
-                st.error(f"Erro ao carregar o jogo: {e}")
-        else:
-            # Em local, usar iframe com localhost
-            game_url = f"https://pinball.streamlit.app:{LOCAL_GAME_SERVER_PORT}/{GAME_HTML_ENTRY_POINT}"
-            components.html(f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body, html {{
-                        margin: 0;
-                        padding: 0;
-                        width: 100vw;
-                        height: calc(100vh - 120px);
-                        overflow: hidden;
-                        background-color: {PAGE_BACKGROUND_COLOR};
-                    }}
-                    iframe {{
-                        width: 100vw;
-                        height: 100%;
-                        border: none;
-                        margin: 0;
-                        padding: 0;
-                    }}
-                </style>
-            </head>
-            <body>
-                <iframe src="{game_url}" allowfullscreen></iframe>
-            </body>
-            </html>
-            """, height=680, scrolling=False)
-    else:
-        # Mostrar imagem do jogo
+        game_dir = Path(game_files_directory)
+        
+        # Função para processar e embdar arquivos
+        def embed_files_in_html(html_content, base_dir):
+            # Processar arquivos JavaScript
+            js_pattern = r'<script[^>]*src="([^"]*\.js)"[^>]*></script>'
+            for match in re.finditer(js_pattern, html_content):
+                js_file = match.group(1)
+                js_path = base_dir / js_file
+                if js_path.exists():
+                    try:
+                        with open(js_path, 'r', encoding='utf-8') as js_f:
+                            js_content = js_f.read()
+                        html_content = html_content.replace(
+                            match.group(0), 
+                            f'<script>\n{js_content}\n</script>'
+                        )
+                    except:
+                        pass
+            
+            # Processar arquivos CSS
+            css_pattern = r'<link[^>]*href="([^"]*\.css)"[^>]*>'
+            for match in re.finditer(css_pattern, html_content):
+                css_file = match.group(1)
+                css_path = base_dir / css_file
+                if css_path.exists():
+                    try:
+                        with open(css_path, 'r', encoding='utf-8') as css_f:
+                            css_content = css_f.read()
+                        html_content = html_content.replace(
+                            match.group(0), 
+                            f'<style>\n{css_content}\n</style>'
+                        )
+                    except:
+                        pass
+            
+            # Processar arquivos WASM como base64
+            wasm_pattern = r'(["\']?)([^"\']*\.wasm)\1'
+            for match in re.finditer(wasm_pattern, html_content):
+                wasm_file = match.group(2)
+                if not wasm_file.startswith('data:'):
+                    wasm_path = base_dir / wasm_file
+                    if wasm_path.exists():
+                        wasm_base64 = get_base64_file(wasm_path)
+                        if wasm_base64:
+                            data_url = f'data:application/wasm;base64,{wasm_base64}'
+                            html_content = html_content.replace(
+                                match.group(0), 
+                                f'{match.group(1)}{data_url}{match.group(1)}'
+                            )
+            
+            # Processar outros recursos (imagens, data files)
+            resource_pattern = r'(["\']?)([^"\']*\.(png|jpg|jpeg|gif|ico|data|mem))\1'
+            for match in re.finditer(resource_pattern, html_content):
+                resource_file = match.group(2)
+                if not resource_file.startswith('data:') and not resource_file.startswith('http'):
+                    resource_path = base_dir / resource_file
+                    if resource_path.exists():
+                        resource_base64 = get_base64_file(resource_path)
+                        if resource_base64:
+                            ext = resource_file.split('.')[-1].lower()
+                            mime_types = {
+                                'png': 'image/png',
+                                'jpg': 'image/jpeg', 
+                                'jpeg': 'image/jpeg',
+                                'gif': 'image/gif',
+                                'ico': 'image/x-icon',
+                                'data': 'application/octet-stream',
+                                'mem': 'application/octet-stream'
+                            }
+                            mime_type = mime_types.get(ext, 'application/octet-stream')
+                            data_url = f'data:{mime_type};base64,{resource_base64}'
+                            html_content = html_content.replace(
+                                match.group(0),
+                                f'{match.group(1)}{data_url}{match.group(1)}'
+                            )
+            
+            return html_content
+        
+        # Processar o HTML
+        processed_html = embed_files_in_html(html_content, game_dir)
+        
+        # Adicionar CSS para fullscreen
+        processed_html = processed_html.replace(
+            '<head>',
+            f'''<head>
+            <style>
+                body, html {{
+                    margin: 0;
+                    padding: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    overflow: hidden;
+                    background-color: {PAGE_BACKGROUND_COLOR};
+                }}
+                canvas {{
+                    display: block;
+                    margin: 0 auto;
+                }}
+            </style>'''
+        )
+        
+        # Renderizar o jogo
+        components.html(processed_html, height=680, scrolling=False)
+        
+    except Exception as e:
+        st.error(f"Erro ao carregar o jogo: {str(e)}")
         st.markdown(f"""
-        <div class="game-content">
-            {"<img src='data:image/png;base64," + mesa_base64 + "' class='game-image' alt='Mesa de Pinball'>" if mesa_base64 else "<p style='color: #CCCCCC;'>Imagem mesa.png não encontrada</p>"}
+        <div class="error-message">
+            <h2>Erro ao processar arquivos do jogo</h2>
+            <p>Detalhes: {str(e)}</p>
+            <p>Verifique se todos os arquivos necessários estão no diretório.</p>
         </div>
         """, unsafe_allow_html=True)
+else:
+    # Mostrar imagem do jogo
+    st.markdown(f"""
+    <div class="game-content">
+        {"<img src='data:image/png;base64," + mesa_base64 + "' class='game-image' alt='Mesa de Pinball'>" if mesa_base64 else "<p style='color: #CCCCCC;'>Imagem mesa.png não encontrada</p>"}
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("""
 <div style="text-align: center;">
