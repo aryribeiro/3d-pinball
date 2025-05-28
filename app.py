@@ -269,7 +269,7 @@ else:
        
        # Determinar URL base
        if is_local:
-           base_url = f"http://localhost:{LOCAL_GAME_SERVER_PORT}"
+           base_url = f"https://pinball.streamlit.app:{LOCAL_GAME_SERVER_PORT}"
        else:
            # Em produção no Streamlit Cloud, usar URL relativa
            base_url = f"/_stcore/static/{LOCAL_GAME_SERVER_PORT}"
