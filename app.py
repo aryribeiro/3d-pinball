@@ -246,7 +246,7 @@ if st.session_state.game_started:
                 padding-right: 0;
                 margin: 30px auto;
                 display: auto;
-                width: 50%;
+                width: 40%;
                 height: 95vh;
             }}
             
