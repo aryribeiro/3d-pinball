@@ -198,8 +198,41 @@ if not path_to_index_html.is_file():
 # Detectar ambiente e configurar URL apropriada
 is_local = is_local_environment()
 
+if is_local:
+    # Ambiente local - usar servidor HTTP local
+    if not st.session_state.python_server_thread_launched_final_ux:
+        st.session_state.python_server_thread_launched_final_ux = True
+        st.session_state.python_server_init_error_final_ux = None
+        
+        server_thread = threading.Thread(
+            target=start_http_server_thread,
+            args=(game_files_directory, LOCAL_GAME_SERVER_PORT),
+            daemon=True
+        )
+        server_thread.start()
+        time.sleep(1)
+        st.rerun()
+    
+    game_url = f"http://localhost:{LOCAL_GAME_SERVER_PORT}/{GAME_HTML_ENTRY_POINT}"
+else:
+    # Ambiente de produção - usar arquivos estáticos diretamente
+    # Ler conteúdo do HTML e servir inline
+    with open(path_to_index_html, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    # Ler arquivos JavaScript e outros recursos necessários
+    js_files = list(Path(game_files_directory).glob("*.js"))
+    wasm_files = list(Path(game_files_directory).glob("*.wasm"))
+    data_files = list(Path(game_files_directory).glob("*.data"))
+    
+    # Converter arquivos para base64 para servir inline
+    resources = {}
+    for file_path in js_files + wasm_files + data_files:
+        with open(file_path, 'rb') as f:
+            resources[file_path.name] = base64.b64encode(f.read()).decode()
+
 # Interface principal
-if st.session_state.python_server_init_error_final_ux:
+if is_local and st.session_state.python_server_init_error_final_ux:
     st.markdown(f"""
     <div class="error-message">
         <h2>Erro ao iniciar servidor</h2>
@@ -224,157 +257,68 @@ else:
     
     # Conteúdo principal
     if st.session_state.game_started:
-        # Ler conteúdo do HTML
-        with open(path_to_index_html, 'r', encoding='utf-8') as f:
-            html_content = f.read()
-        
-        # Modificar o HTML para funcionar no Streamlit
-        modified_html = html_content.replace(
-            'src=SpaceCadetPinball.js',
-            f'src="./static/SpaceCadetPinball.js"'
-        )
-        
-        # Servir diretamente o HTML modificado
-        production_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                :root{{
-                    --ActiveBorder:rgb(212, 208, 200);
-                    --ActiveTitle:rgb(10, 36, 106);
-                    --AppWorkspace:rgb(128, 128, 128);
-                    --Background:rgb(58, 110, 165);
-                    --ButtonAlternateFace:rgb(192, 192, 192);
-                    --ButtonDkShadow:rgb(64, 64, 64);
-                    --ButtonFace:rgb(212, 208, 200);
-                    --ButtonHilight:rgb(255, 255, 255);
-                    --ButtonLight:rgb(212, 208, 200);
-                    --ButtonShadow:rgb(128, 128, 128);
-                    --ButtonText:rgb(0, 0, 0);
-                    --GradientActiveTitle:rgb(166, 202, 240);
-                    --GradientInactiveTitle:rgb(192, 192, 192);
-                    --GrayText:rgb(128, 128, 128);
-                    --Hilight:rgb(10, 36, 106);
-                    --HilightText:rgb(255, 255, 255);
-                    --HotTrackingColor:rgb(0, 0, 128);
-                    --InactiveBorder:rgb(212, 208, 200);
-                    --InactiveTitle:rgb(128, 128, 128);
-                    --InactiveTitleText:rgb(212, 208, 200);
-                    --InfoText:rgb(0, 0, 0);
-                    --InfoWindow:rgb(255, 255, 225);
-                    --Menu:rgb(212, 208, 200);
-                    --MenuBar:rgb(192, 192, 192);
-                    --MenuHilight:rgb(0, 0, 128);
-                    --MenuText:rgb(0, 0, 0);
-                    --Scrollbar:rgb(212, 208, 200);
-                    --TitleText:rgb(255, 255, 255);
-                    --Window:rgb(255, 255, 255);
-                    --WindowFrame:rgb(0, 0, 0);
-                    --WindowText:rgb(0, 0, 0);
-                }}
-                body {{
-                    font-family: Tahoma, Geneva, Verdana, sans-serif;
-                    background-color: var(--Background);
-                    text-align: center;
-                    margin: 0;
-                    padding: 0;
-                    overflow: hidden;
-                }}
-                canvas.emscripten {{
-                    border: 0 none;
-                    background-color: #000;
-                    width: 100% !important;
-                    height: 100% !important;
-                }}
-                .window {{
-                    font-size: 8pt;
-                    color: var(--WindowText);
-                    background-color: var(--ButtonFace);
-                    border: 1px solid var(--ActiveBorder);
-                    width: 100%;
-                    height: 100%;
-                    margin: 0;
-                    padding: 0;
-                }}
-                #status {{
-                    margin: 20px;
-                    color: white;
-                }}
-                #progress {{
-                    margin: 20px;
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="active window">
-                <div id="status">Carregando...</div>
-                <div><progress hidden id="progress" max="100" value="0"></progress></div>
-                <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
-            </div>
-            
-            <script>
-                var statusElement = document.getElementById('status');
-                var progressElement = document.getElementById('progress');
-                var Module = {{
-                    preRun: [],
-                    postRun: [],
-                    print: function(text) {{
-                        console.log(text);
-                    }},
-                    printErr: function(text) {{
-                        console.error(text);
-                    }},
-                    canvas: document.getElementById('canvas'),
-                    setStatus: function(text) {{
-                        if (!Module.setStatus.last) Module.setStatus.last = {{ time: Date.now(), text: '' }};
-                        if (text === Module.setStatus.last.text) return;
-                        var m = text.match(/([^(]+)\\((\\d+(\\.\\d+)?)\\/(\\d+)\\)/);
-                        var now = Date.now();
-                        if (m && now - Module.setStatus.last.time < 30) return;
-                        Module.setStatus.last.time = now;
-                        Module.setStatus.last.text = text;
-                        if (m) {{
-                            text = m[1];
-                            progressElement.value = parseInt(m[2]) * 100;
-                            progressElement.max = parseInt(m[4]) * 100;
-                            progressElement.hidden = false;
-                        }} else {{
-                            progressElement.value = null;
-                            progressElement.max = null;
-                            progressElement.hidden = true;
-                            document.getElementById('canvas').style.display = '';
-                        }}
-                        statusElement.innerHTML = text;
-                        if (text === '') {{
-                            statusElement.style.display = 'none';
-                            progressElement.style.display = 'none';
-                        }} else {{
-                            statusElement.style.display = '';
-                            progressElement.style.display = '';
-                        }}
-                    }},
-                    totalDependencies: 0,
-                    monitorRunDependencies: function(left) {{
-                        this.totalDependencies = Math.max(this.totalDependencies, left);
-                        Module.setStatus(left ? 'Preparando... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : 'Todos os downloads concluídos.');
+        if is_local:
+            # Ambiente local - usar iframe com servidor HTTP
+            components.html(f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body, html {{
+                        margin: 0;
+                        padding: 0;
+                        width: 100vw;
+                        height: calc(100vh - 120px);
+                        overflow: hidden;
+                        background-color: {PAGE_BACKGROUND_COLOR};
                     }}
-                }};
-                Module.setStatus('Baixando...');
-                window.onerror = function() {{
-                    Module.setStatus('Exceção lançada, verifique o console JavaScript');
-                    Module.setStatus = function(text) {{
-                        if (text) Module.printErr('[post-exception status] ' + text);
+                    iframe {{
+                        width: 100vw;
+                        height: 100%;
+                        border: none;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                </style>
+            </head>
+            <body>
+                <iframe src="{game_url}" allowfullscreen></iframe>
+            </body>
+            </html>
+            """, height=680, scrolling=False)
+        else:
+            # Ambiente de produção - servir HTML inline com recursos embutidos
+            production_html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body, html {{
+                        margin: 0;
+                        padding: 0;
+                        width: 100vw;
+                        height: calc(100vh - 120px);
+                        overflow: hidden;
+                        background-color: {PAGE_BACKGROUND_COLOR};
+                    }}
+                </style>
+            </head>
+            <body>
+                {html_content}
+                <script>
+                    // Configurar URLs para recursos em produção
+                    Module.locateFile = function(path) {{
+                        if (path.endsWith('.wasm') || path.endsWith('.data')) {{
+                            return 'data:application/octet-stream;base64,' + resources[path];
+                        }}
+                        return path;
                     }};
-                }};
-            </script>
-            <script async src="./static/SpaceCadetPinball.js"></script>
-        </body>
-        </html>
-        """
-        
-        components.html(production_html, height=680, scrolling=False)
+                </script>
+            </body>
+            </html>
+            """
+            
+            components.html(production_html, height=680, scrolling=False)
     else:
         # Mostrar imagem do jogo
         st.markdown(f"""
