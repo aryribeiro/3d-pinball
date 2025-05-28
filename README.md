@@ -69,10 +69,9 @@ space-cadet-pinball/
 ### Servidor HTTP Local
 - Servidor HTTP silencioso executado em thread separada
 - Reutilização automática de endereço para evitar conflitos
-- Tratamento de erros com feedback visual
 
 ### Interface Streamlit
-- CSS customizado para experiência em tela cheia
+- CSS customizado para experiência em janela centralizada
 - Componentes HTML integrados para embedding do jogo
 - Sistema de estado para controle de fluxo da aplicação
 - Imagens convertidas para base64 para carregamento otimizado
@@ -114,7 +113,8 @@ space-cadet-pinball/
 
 ## 🎮 Sobre o Jogo
 
-O 3D Pinball foi originalmente incluído no Windows e é um dos jogos de pinball mais nostálgicos do PC. Esta implementação web preserva toda a jogabilidade original em um ambiente web.
+O 3D Pinball foi originalmente incluído no Windows e é um dos jogos de pinball mais nostálgicos do PC. Esta implementação web preserva toda a jogabilidade original (clicando na barra azul da janela do game) em um ambiente web.
+F2 inicia novo jogo. F3 pausa. X move a mesa. Espaço e/ou roda do mouse lança a bola. E os botões esquerdo e direito do mouse mexem as alavancas da mesa.
 
 ## 📄 Licença
 
