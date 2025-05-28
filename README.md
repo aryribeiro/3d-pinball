@@ -1,8 +1,8 @@
-# Space Cadet Pinball - Streamlit Edition
+# 3D Pinball - Space Cadet: Streamlit Edition
 
 ## 📌 Descrição
 
-Uma aplicação web desenvolvida em Streamlit que hospeda o clássico jogo **Space Cadet Pinball** (3D Pinball for Windows). A aplicação cria um servidor HTTP local para servir os arquivos do jogo e apresenta uma interface moderna e responsiva.
+Uma aplicação web desenvolvida em Streamlit que hospeda o clássico jogo **3D Pinball - Space Cadet**. A aplicação cria um servidor HTTP local para servir os arquivos do jogo e apresenta uma interface moderna e responsiva.
 
 ## 🎮 Características
 
@@ -134,4 +134,4 @@ Para dúvidas, entre em contato comigo, Ary Ribeiro, via email aryribeiro@gmail.
 
 **Desenvolvido com ❤️ usando Python e Streamlit**
 
-**Fork do Alula:** https://github.com/alula/SpaceCadetPinball/tree/gh-pages
+**Fork da Alula:** https://github.com/alula/SpaceCadetPinball/tree/gh-pages
