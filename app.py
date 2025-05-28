@@ -13,7 +13,7 @@ import mimetypes
 # --- Configurações Globais ---
 GAME_HTML_ENTRY_POINT = "index.html"
 LOCAL_GAME_SERVER_PORT = 8001
-APP_TITLE = "🪩 3D Pinball | Space Cadet"
+APP_TITLE = "🕹️ 3D Pinball | Space Cadet"
 
 # Fundo azul escuro do game original
 PAGE_BACKGROUND_COLOR = "#3A6EA5"
@@ -272,7 +272,7 @@ else:
            base_url = f"https://pinball.streamlit.app:{LOCAL_GAME_SERVER_PORT}"
        else:
            # Em produção no Streamlit Cloud, usar URL relativa
-           base_url = f"/_stcore/static/{LOCAL_GAME_SERVER_PORT}"
+           base_url = f"https://pinball.streamlit.app:{LOCAL_GAME_SERVER_PORT}"
        
        game_url = f"{base_url}/{GAME_HTML_ENTRY_POINT}"
        
@@ -312,11 +312,11 @@ else:
        </head>
        <body>
            <div id="loading" class="loading">
-               🎮 Carregando Space Cadet Pinball...
+               🕹️ Carregando Space Cadet Pinball...
            </div>
            <iframe 
                id="gameFrame"
-               src="{game_url}" 
+               src="https://pinball.streamlit.app" 
                allowfullscreen
                allow="cross-origin-isolated"
                sandbox="allow-scripts allow-same-origin allow-forms"
