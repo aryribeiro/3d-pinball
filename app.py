@@ -243,8 +243,8 @@ if st.session_state.game_started:
                 background-color: var(--ButtonFace);
                 border: 1px solid var(--ActiveBorder);
                 box-shadow: -0.5px -0.5px 0 0.5px var(--ButtonHilight), 0 0 0 1px var(--ButtonShadow), -0.5px -0.5px 0 1.5px var(--ButtonLight), 0 0 0 2px var(--ButtonDkShadow);
-                padding-right: 0;
-                margin: 0;
+                padding-right: 10px;
+                margin: 20px auto;
                 display: auto;
                 width: 90%;
                 height: 90vh;
