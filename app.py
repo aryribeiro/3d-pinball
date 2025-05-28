@@ -387,7 +387,7 @@ if st.session_state.game_started:
     </html>
     """
     
-    components.html(game_html, height=500, scrolling=False)
+    components.html(game_html, height=650, scrolling=False)
 else:
     # Mostrar imagem
     st.markdown(f"""
