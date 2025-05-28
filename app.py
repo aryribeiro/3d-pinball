@@ -293,7 +293,7 @@ if st.session_state.game_started:
             </div>
             <div id="status">Carregando...</div>
             <div>
-                <progress id="progress" value="0" max="50" style="display: none;"></progress>
+                <progress id="progress" value="0" max="30" style="display: none;"></progress>
             </div>
             <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
         </div>
