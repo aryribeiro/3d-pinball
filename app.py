@@ -113,7 +113,7 @@ st.markdown(f"""
         box-shadow: 0 4px 15px rgba(0, 100, 200, 0.3) !important;
         transition: all 0.3s ease !important;
         width: auto !important;
-        height: auto !important;
+        height: 480px !important;
         margin-bottom: 15px !important;
     }}
     
@@ -231,8 +231,8 @@ if st.session_state.game_started:
             canvas.emscripten {{
                 border: 0 none;
                 background-color: #000;
-                width: 80%;
-                height: 80%;
+                width: 100%;
+                height: 100%;
                 max-width: 100vw;
                 max-height: 100vh;
             }}
