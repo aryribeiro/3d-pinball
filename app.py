@@ -225,7 +225,7 @@ else:
     # Conteúdo principal
     if st.session_state.game_started:
         # Mostrar game usando components.html
-        game_url = f"http://localhost:{LOCAL_GAME_SERVER_PORT}/{GAME_HTML_ENTRY_POINT}"
+        game_url = f"https://pinball.streamlit.app:{LOCAL_GAME_SERVER_PORT}/{GAME_HTML_ENTRY_POINT}"
         components.html(f"""
         <!DOCTYPE html>
         <html>
