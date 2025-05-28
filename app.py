@@ -113,7 +113,7 @@ st.markdown(f"""
         box-shadow: 0 4px 15px rgba(0, 100, 200, 0.3) !important;
         transition: all 0.3s ease !important;
         width: auto !important;
-        height: 480px !important;
+        height: auto !important;
         margin-bottom: 15px !important;
     }}
     
