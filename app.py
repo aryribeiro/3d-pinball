@@ -1,216 +1,188 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import base64
+import os
 from pathlib import Path
 
-# --- Configurações Globais ---
-GAME_HTML_ENTRY_POINT = "index.html"
 APP_TITLE = "🪩 3D Pinball | Space Cadet"
-PAGE_BACKGROUND_COLOR = "#3A6EA5"
+PAGE_BG = "#3A6EA5"
 
-# --- Estado da Sessão ---
 if 'game_started' not in st.session_state:
     st.session_state.game_started = False
 
-# --- Função para converter imagem para base64 ---
-def get_base64_image(image_path):
+def get_base64_image(path):
     try:
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
     except:
         return None
 
-# --- Função para ler arquivo HTML ---
-def read_html_file(file_path):
+def get_file_content(path):
     try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            return file.read()
+        with open(path, 'r', encoding='utf-8') as f:
+            return f.read()
     except:
         return None
 
-# --- Configuração da Página Streamlit ---
+def encode_file_base64(path):
+    try:
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except:
+        return ""
+
 st.set_page_config(page_title=APP_TITLE, layout="wide", initial_sidebar_state="collapsed")
 
-# Converter imagem para base64
-game_files_directory = str(Path(__file__).resolve().parent)
-mesa_image_path = Path(game_files_directory) / "mesa.png"
-mesa_base64 = get_base64_image(mesa_image_path)
+base_dir = Path(__file__).resolve().parent
+mesa_img = get_base64_image(base_dir / "mesa.png")
 
-# CSS para fundo azul e layout
 st.markdown(f"""
 <style>
-    html, body, [data-testid="stAppViewContainer"], .main {{
-        background-color: {PAGE_BACKGROUND_COLOR} !important;
-        height: 100vh !important;
-        width: 100vw !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow-x: hidden !important;
-    }}
-    
-    .block-container {{
-        padding: 0 !important;
-        margin: 0 !important;
-        max-width: 100% !important;
-        width: 100vw !important;
-    }}
-    
-    header[data-testid="stHeader"], 
-    .stDeployButton,
-    footer,
-    .stDecoration {{
-        display: none !important;
-    }}
-    
-    .game-header {{
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        background-color: {PAGE_BACKGROUND_COLOR};
-        color: #FFFFFF;
-        text-align: center;
-        padding: 20px 0 10px 0;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }}
-    
-    .game-title {{
-        font-size: 48px;
-        margin-bottom: 30px;
-        color: #FFFFFF;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        margin-top: 0;
-    }}
-    
-    .game-content {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: calc(100vh - 120px);
-        background-color: {PAGE_BACKGROUND_COLOR};
-        padding: 20px;
-    }}
-    
-    .game-image {{
-        max-width: 90vw;
-        max-height: 70vh;
-        width: auto;
-        height: auto;
-        border-radius: 15px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-    }}
-    
-    .stButton > button {{
-        padding: 15px 30px !important;
-        font-size: 20px !important;
-        font-weight: bold !important;
-        color: #FFFFFF !important;
-        background: linear-gradient(45deg, #0066CC, #0099FF) !important;
-        border: none !important;
-        border-radius: 10px !important;
-        cursor: pointer !important;
-        box-shadow: 0 4px 15px rgba(0, 100, 200, 0.3) !important;
-        transition: all 0.3s ease !important;
-        width: auto !important;
-        height: auto !important;
-        margin-bottom: 15px !important;
-    }}
-    
-    .stButton > button:hover {{
-        background: linear-gradient(45deg, #0055AA, #0088EE) !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(0, 100, 200, 0.4) !important;
-    }}
-    
-    .stButton {{
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-    }}
-    
-    .error-message {{
-        color: #FF6B6B;
-        background: rgba(255, 107, 107, 0.1);
-        padding: 20px;
-        border-radius: 10px;
-        border: 1px solid #FF6B6B;
-        margin: 20px;
-        text-align: center;
-    }}
+html, body, [data-testid="stAppViewContainer"], .main {{
+    background-color: {PAGE_BG} !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}}
+.block-container {{
+    padding: 0 !important;
+    max-width: 100% !important;
+}}
+header[data-testid="stHeader"], .stDeployButton, footer, .stDecoration {{
+    display: none !important;
+}}
+.game-header {{
+    text-align: center;
+    color: white;
+    padding: 20px 0;
+    background: {PAGE_BG};
+}}
+.game-title {{
+    font-size: 48px;
+    margin: 0 0 20px 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}}
+.stButton > button {{
+    padding: 15px 30px !important;
+    font-size: 20px !important;
+    font-weight: bold !important;
+    color: white !important;
+    background: linear-gradient(45deg, #0066CC, #0099FF) !important;
+    border: none !important;
+    border-radius: 10px !important;
+    box-shadow: 0 4px 15px rgba(0,100,200,0.3) !important;
+}}
+.game-content {{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 200px);
+    padding: 20px;
+}}
+.game-image {{
+    max-width: 90vw;
+    max-height: 70vh;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}}
 </style>
 """, unsafe_allow_html=True)
 
-# --- Lógica Principal ---
-path_to_index_html = Path(game_files_directory) / GAME_HTML_ENTRY_POINT
+st.markdown(f'<div class="game-header"><h1 class="game-title">{APP_TITLE}</h1></div>', unsafe_allow_html=True)
 
-# Verificar se arquivo existe
-if not path_to_index_html.is_file():
-    st.markdown(f"""
-    <div class="error-message">
-        <h2>ERRO: Arquivo '{GAME_HTML_ENTRY_POINT}' não encontrado</h2>
-        <p>Verifique se o arquivo está no diretório correto: {game_files_directory}</p>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
-
-# Ler conteúdo do HTML
-html_content = read_html_file(path_to_index_html)
-if not html_content:
-    st.markdown(f"""
-    <div class="error-message">
-        <h2>ERRO: Não foi possível ler o arquivo '{GAME_HTML_ENTRY_POINT}'</h2>
-        <p>Verifique as permissões do arquivo</p>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
-
-# Interface principal
-# Header fixo com título e botão
-st.markdown(f"""
-<div class="game-header">
-    <h1 class="game-title">{APP_TITLE}</h1>
-</div>
-""", unsafe_allow_html=True)
-
-# Botão centralizado no header
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
-    if st.button("🚀 INICIAR JOGO", key="start_game"):
+    if st.button("🚀 INICIAR JOGO"):
         st.session_state.game_started = True
         st.rerun()
 
-# Conteúdo principal
 if st.session_state.game_started:
-    # Modificar o HTML para usar caminhos relativos corretos
-    modified_html = html_content.replace(
-        'src="', 
-        f'src="./'
-    ).replace(
-        'href="',
-        f'href="./'
-    )
+    html_file = base_dir / "index.html"
     
-    # Embed o jogo diretamente usando components.html
-    components.html(
-        modified_html,
-        height=800,
-        scrolling=False
-    )
+    if html_file.exists():
+        html_content = get_file_content(html_file)
+        
+        if html_content:
+            # Encontrar e incorporar todos os arquivos necessários
+            js_files = []
+            wasm_files = []
+            
+            # Procurar por arquivos JS e WASM no diretório
+            for file_path in base_dir.glob("*.js"):
+                js_content = get_file_content(file_path)
+                if js_content:
+                    js_files.append(js_content)
+            
+            for file_path in base_dir.glob("*.wasm"):
+                wasm_b64 = encode_file_base64(file_path)
+                if wasm_b64:
+                    wasm_files.append((file_path.name, wasm_b64))
+            
+            # Criar HTML completo incorporando todos os recursos
+            full_html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    body, html {{
+                        margin: 0;
+                        padding: 0;
+                        width: 100vw;
+                        height: 100vh;
+                        background: {PAGE_BG};
+                        overflow: hidden;
+                    }}
+                    canvas {{
+                        display: block;
+                        margin: 0 auto;
+                        max-width: 100%;
+                        max-height: 100%;
+                    }}
+                </style>
+            </head>
+            <body>
+                {html_content.split('<body>')[1].split('</body>')[0] if '<body>' in html_content else html_content}
+                
+                <script>
+                // Função para carregar WASM a partir de base64
+                function base64ToArrayBuffer(base64) {{
+                    const binaryString = window.atob(base64);
+                    const len = binaryString.length;
+                    const bytes = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {{
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }}
+                    return bytes.buffer;
+                }}
+                
+                // Incorporar arquivos WASM
+                {chr(10).join([f'window["{name}"] = base64ToArrayBuffer("{content}");' for name, content in wasm_files])}
+                
+                // Incorporar arquivos JS
+                {chr(10).join(js_files)}
+                </script>
+            </body>
+            </html>
+            """
+            
+            components.html(full_html, height=750, scrolling=False)
+        else:
+            st.error("Erro ao ler index.html")
+    else:
+        st.error("Arquivo index.html não encontrado")
 else:
-    # Mostrar imagem do jogo
     st.markdown(f"""
     <div class="game-content">
-        {"<img src='data:image/png;base64," + mesa_base64 + "' class='game-image' alt='Mesa de Pinball'>" if mesa_base64 else "<p style='color: #CCCCCC;'>Imagem mesa.png não encontrada</p>"}
+        {"<img src='data:image/png;base64," + mesa_img + "' class='game-image'>" if mesa_img else "<p style='color: white;'>Imagem não encontrada</p>"}
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("""
-<div style="text-align: center; margin-top: 20px;">
-  <div style="color: white; font-size: 14px;">
-  💬 Por <strong>Ary Ribeiro</strong>. Obs.: fork da Alula. Código original no GitHub: 
-  <a href="https://github.com/alula/SpaceCadetPinball/tree/gh-pages" style="color: white;">AQUI</a><br>
-  <em>Use o mouse para controlar</em>
-  </div>
+<div style="text-align: center; color: white; padding: 20px;">
+💬 Por <strong>Ary Ribeiro</strong> | Fork da Alula | 
+<a href="https://github.com/alula/SpaceCadetPinball/tree/gh-pages" style="color: white;">GitHub</a><br>
+<em>Use o mouse para controlar</em>
 </div>
 """, unsafe_allow_html=True)
