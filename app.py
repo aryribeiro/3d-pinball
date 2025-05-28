@@ -183,7 +183,7 @@ if st.session_state.game_started:
     <head>
         <meta charset="utf-8">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>3D Pinball - Space Cadet</title>
+        <title>.</title>
         <style>
             :root {{
                 --ActiveBorder: rgb(212, 208, 200);
@@ -289,7 +289,7 @@ if st.session_state.game_started:
     <body>
         <div class="window active">
             <div class="titlebar">
-                <span class="titlebar-title">3D Pinball - Space Cadet</span>
+                <span class="titlebar-title">.</span>
             </div>
             <div id="status">Carregando...</div>
             <div>
@@ -387,7 +387,7 @@ if st.session_state.game_started:
     </html>
     """
     
-    components.html(game_html, height=650, scrolling=False)
+    components.html(game_html, height=600, scrolling=False)
 else:
     # Mostrar imagem
     st.markdown(f"""
