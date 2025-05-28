@@ -1,18 +1,27 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import http.server
+import socketserver
+import threading
 from pathlib import Path
-import base64
+from functools import partial
+import time
 import os
+import base64
 
 # --- Configurações Globais ---
-APP_TITLE = "🕹️ 3D Pinball | Space Cadet"
-# URL para o jogo hospedado publicamente (GitHub Pages da Alula para SpaceCadetPinball)
-HOSTED_GAME_URL = "https://pinball.streamlit.app/"
+GAME_HTML_ENTRY_POINT = "index.html"
+LOCAL_GAME_SERVER_PORT = 8001
+APP_TITLE = "🪩 3D Pinball | Space Cadet"
 
 # Fundo azul escuro do game original
 PAGE_BACKGROUND_COLOR = "#3A6EA5"
 
 # --- Estado da Sessão ---
+if 'python_server_thread_launched_final_ux' not in st.session_state:
+    st.session_state.python_server_thread_launched_final_ux = False
+if 'python_server_init_error_final_ux' not in st.session_state:
+    st.session_state.python_server_init_error_final_ux = None
 if 'game_started' not in st.session_state:
     st.session_state.game_started = False
 
@@ -21,19 +30,31 @@ def get_base64_image(image_path):
     try:
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
-    except FileNotFoundError:
-        print(f"Aviso: Arquivo de imagem não encontrado em {image_path}")
+    except:
         return None
+
+# --- Função do Servidor HTTP (Thread Separada) ---
+def start_http_server_thread(directory_to_serve: str, port: int):
+    class QuietHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, format, *args):
+            pass
+
+    handler = partial(QuietHTTPRequestHandler, directory=directory_to_serve)
+    try:
+        socketserver.TCPServer.allow_reuse_address = True
+        with socketserver.TCPServer(("", port), handler) as httpd:
+            print(f"SUCCESS: Local HTTP server started on port {port}")
+            httpd.serve_forever()
     except Exception as e:
-        print(f"Erro ao carregar imagem {image_path}: {e}")
-        return None
+        error_msg = f"PYTHON_SERVER_ERROR: Failed to start HTTP server on port {port}: {e}"
+        print(error_msg)
+        st.session_state.python_server_init_error_final_ux = error_msg
 
 # --- Configuração da Página Streamlit ---
 st.set_page_config(page_title=APP_TITLE, layout="centered", initial_sidebar_state="collapsed")
 
 # Converter imagem para base64
-# __file__ é o caminho para o script atual. .parent pega o diretório.
-game_files_directory = str(Path(__file__).resolve().parent)
+game_files_directory = str(Path(__file__).resolve().parent / "static")
 mesa_image_path = Path(game_files_directory) / "mesa.png"
 mesa_base64 = get_base64_image(mesa_image_path)
 
@@ -88,7 +109,7 @@ st.markdown(f"""
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: calc(100vh - 120px); /* Altura para conteúdo antes do jogo iniciar */
+        min-height: calc(100vh - 120px);
         background-color: {PAGE_BACKGROUND_COLOR};
         padding: 20px;
     }}
@@ -130,8 +151,6 @@ st.markdown(f"""
         align-items: center !important;
     }}
     
-    /* .game-iframe classe original, mantida caso seja usada em outro contexto.
-       O iframe do jogo é estilizado diretamente no HTML do components.html. */
     .game-iframe {{
         width: 100vw !important;
         height: calc(100vh - 120px) !important;
@@ -152,73 +171,167 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
+# --- Função para detectar ambiente ---
+def is_local_environment():
+    """Detecta se está rodando localmente ou em produção"""
+    # Verifica variáveis de ambiente do Streamlit Cloud
+    return not any([
+        os.getenv('STREAMLIT_SHARING_MODE'),
+        os.getenv('STREAMLIT_SERVER_PORT'),
+        'streamlit.app' in os.getenv('HOSTNAME', '').lower(),
+        'streamlit' in os.getenv('RAILWAY_ENVIRONMENT_NAME', '').lower()
+    ])
+
 # --- Lógica Principal ---
+path_to_index_html = Path(game_files_directory) / GAME_HTML_ENTRY_POINT
 
-# Header fixo com título
-st.markdown(f"""
-<div class="game-header">
-    <h1 class="game-title">{APP_TITLE}</h1>
-</div>
-""", unsafe_allow_html=True)
-
-# Botão centralizado abaixo do header
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
-    if st.button("🚀 INICIAR JOGO", key="start_game"):
-        st.session_state.game_started = True
-        st.rerun() # Rerun para atualizar a interface e mostrar o jogo
-
-# Conteúdo principal (imagem de preview ou o jogo)
-if st.session_state.game_started:
-    # Mostrar game usando components.html
-    game_url = HOSTED_GAME_URL
-    
-    # Altura fixa para o iframe do componente que contém o jogo.
-    # O valor 680px foi usado no código original com components.html.
-    game_container_height_px = 680 
-
-    components.html(f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <style>
-            body, html {{ /* Estilos para o documento DENTRO do iframe de components.html */
-                margin: 0;
-                padding: 0;
-                width: 100%; /* Preenche a largura do iframe de components.html */
-                height: 100%; /* Preenche a altura do iframe de components.html */
-                overflow: hidden;
-                background-color: {PAGE_BACKGROUND_COLOR}; /* Cor de fundo opcional */
-            }}
-            iframe {{ /* Estilos para o iframe DO JOGO, dentro do documento acima */
-                width: 100%;
-                height: 100%;
-                border: none;
-                margin: 0;
-                padding: 0;
-                display: block; /* Para evitar espaços extras abaixo do iframe */
-            }}
-        </style>
-    </head>
-    <body>
-        <iframe src="{game_url}" allowfullscreen></iframe>
-    </body>
-    </html>
-    """, height=game_container_height_px, scrolling=False)
-else:
-    # Mostrar imagem do jogo antes de iniciar
+# Verificar se arquivo existe
+if not path_to_index_html.is_file():
     st.markdown(f"""
-    <div class="game-content">
-        {"<img src='data:image/png;base64," + mesa_base64 + "' class='game-image' alt='Mesa de Pinball'>" if mesa_base64 else "<p style='color: #CCCCCC;'>Imagem da mesa (mesa.png) não encontrada.</p>"}
+    <div class="error-message">
+        <h2>ERRO: Arquivo '{GAME_HTML_ENTRY_POINT}' não encontrado</h2>
+        <p>Verifique se o arquivo está no diretório correto: {game_files_directory}</p>
     </div>
     """, unsafe_allow_html=True)
+    st.stop()
 
-# Rodapé com créditos
+# Detectar ambiente e configurar URL apropriada
+is_local = is_local_environment()
+
+if is_local:
+    # Ambiente local - usar servidor HTTP local
+    if not st.session_state.python_server_thread_launched_final_ux:
+        st.session_state.python_server_thread_launched_final_ux = True
+        st.session_state.python_server_init_error_final_ux = None
+        
+        server_thread = threading.Thread(
+            target=start_http_server_thread,
+            args=(game_files_directory, LOCAL_GAME_SERVER_PORT),
+            daemon=True
+        )
+        server_thread.start()
+        time.sleep(1)
+        st.rerun()
+    
+    game_url = f"http://localhost:{LOCAL_GAME_SERVER_PORT}/{GAME_HTML_ENTRY_POINT}"
+else:
+    # Ambiente de produção - usar arquivos estáticos diretamente
+    # Ler conteúdo do HTML e servir inline
+    with open(path_to_index_html, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    
+    # Ler arquivos JavaScript e outros recursos necessários
+    js_files = list(Path(game_files_directory).glob("*.js"))
+    wasm_files = list(Path(game_files_directory).glob("*.wasm"))
+    data_files = list(Path(game_files_directory).glob("*.data"))
+    
+    # Converter arquivos para base64 para servir inline
+    resources = {}
+    for file_path in js_files + wasm_files + data_files:
+        with open(file_path, 'rb') as f:
+            resources[file_path.name] = base64.b64encode(f.read()).decode()
+
+# Interface principal
+if is_local and st.session_state.python_server_init_error_final_ux:
+    st.markdown(f"""
+    <div class="error-message">
+        <h2>Erro ao iniciar servidor</h2>
+        <p>{st.session_state.python_server_init_error_final_ux}</p>
+        <button onclick="location.reload()" class="start-button">Tentar Novamente</button>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    # Header fixo com título e botão
+    st.markdown(f"""
+    <div class="game-header">
+        <h1 class="game-title">{APP_TITLE}</h1>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Botão centralizado no header
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("🚀 INICIAR JOGO", key="start_game"):
+            st.session_state.game_started = True
+            st.rerun()
+    
+    # Conteúdo principal
+    if st.session_state.game_started:
+        if is_local:
+            # Ambiente local - usar iframe com servidor HTTP
+            components.html(f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body, html {{
+                        margin: 0;
+                        padding: 0;
+                        width: 100vw;
+                        height: calc(100vh - 120px);
+                        overflow: hidden;
+                        background-color: {PAGE_BACKGROUND_COLOR};
+                    }}
+                    iframe {{
+                        width: 100vw;
+                        height: 100%;
+                        border: none;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                </style>
+            </head>
+            <body>
+                <iframe src="{game_url}" allowfullscreen></iframe>
+            </body>
+            </html>
+            """, height=680, scrolling=False)
+        else:
+            # Ambiente de produção - servir HTML inline com recursos embutidos
+            production_html = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body, html {{
+                        margin: 0;
+                        padding: 0;
+                        width: 100vw;
+                        height: calc(100vh - 120px);
+                        overflow: hidden;
+                        background-color: {PAGE_BACKGROUND_COLOR};
+                    }}
+                </style>
+            </head>
+            <body>
+                {html_content}
+                <script>
+                    // Configurar URLs para recursos em produção
+                    Module.locateFile = function(path) {{
+                        if (path.endsWith('.wasm') || path.endsWith('.data')) {{
+                            return 'data:application/octet-stream;base64,' + resources[path];
+                        }}
+                        return path;
+                    }};
+                </script>
+            </body>
+            </html>
+            """
+            
+            components.html(production_html, height=680, scrolling=False)
+    else:
+        # Mostrar imagem do jogo
+        st.markdown(f"""
+        <div class="game-content">
+            {"<img src='data:image/png;base64," + mesa_base64 + "' class='game-image' alt='Mesa de Pinball'>" if mesa_base64 else "<p style='color: #CCCCCC;'>Imagem mesa.png não encontrada</p>"}
+        </div>
+        """, unsafe_allow_html=True)
+
 st.markdown("""
-<div style="text-align: center; padding-top: 20px; padding-bottom: 20px;">
-  <div style="color: white; font-size: 14px;">
-  🕹️ Por <strong>Ary Ribeiro</strong>. Obs.: fork da Alula. Código original no GitHub: 
-  <a href="https://github.com/alula/SpaceCadetPinball/tree/gh-pages" target="_blank" style="color: white; text-decoration: underline;">AQUI</a><br>
-  <em>Obs.: Use o mouse para controlar os flippers e lançar a bola.</em>
+<div style="text-align: center;">
+  <div style="color: white;">
+  💬 Por <strong>Ary Ribeiro</strong>. Obs.: fork da Alula. Código original no GitHub: 
+  <a href="https://github.com/alula/SpaceCadetPinball/tree/gh-pages" style="color: white;">AQUI</a><br>
+  <em>Obs.: Use o mouse p/ controlar</em>
 </div>
 """, unsafe_allow_html=True)
