@@ -41,8 +41,8 @@ st.markdown(f"""
 <style>
     html, body, [data-testid="stAppViewContainer"], .main {{
         background-color: {PAGE_BACKGROUND_COLOR} !important;
-        height: 80vh !important;
-        width: 800vw !important;
+        height: 100vh !important;
+        width: 100vw !important;
         margin: 0 !important;
         padding: 0 !important;
         overflow-x: hidden !important;
