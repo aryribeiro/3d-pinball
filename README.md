@@ -1,3 +1,5 @@
+Obs.: caso o app esteja no modo "sleeping" (dormindo) ao entrar, basta clicar no botão que estará disponível e aguardar, para ativar o mesmo. 
+![print](https://github.com/user-attachments/assets/8f26c61a-613d-4a30-af18-bc4da4d8f883)
 # 3D Pinball - Space Cadet, em Python e Streamlit
 
 ## 📌 Descrição
