@@ -53,11 +53,6 @@ def start_http_server_thread(directory_to_serve: str, port: int):
 # --- Configuração da Página Streamlit ---
 st.set_page_config(page_title=APP_TITLE, layout="centered", initial_sidebar_state="collapsed")
 
-# Converter imagem para base64
-game_files_directory = str(Path(__file__).resolve().parent / "static")
-mesa_image_path = Path(game_files_directory) / "mesa.png"
-mesa_base64 = get_base64_image(mesa_image_path)
-
 # CSS para fundo azul e layout
 st.markdown(f"""
 <style>
@@ -183,17 +178,40 @@ def is_local_environment():
     ])
 
 # --- Lógica Principal ---
-path_to_index_html = Path(game_files_directory) / GAME_HTML_ENTRY_POINT
+# Tentar encontrar index.html em diferentes localizações
+possible_paths = [
+    Path(__file__).resolve().parent / "static" / GAME_HTML_ENTRY_POINT,
+    Path(__file__).resolve().parent / GAME_HTML_ENTRY_POINT,
+    Path(__file__).resolve().parent / "3d-pinball" / "static" / GAME_HTML_ENTRY_POINT,
+]
 
-# Verificar se arquivo existe
-if not path_to_index_html.is_file():
+path_to_index_html = None
+game_files_directory = None
+
+for path in possible_paths:
+    if path.is_file():
+        path_to_index_html = path
+        game_files_directory = str(path.parent)
+        break
+
+if not path_to_index_html:
+    # Listar arquivos para debug
+    current_dir = Path(__file__).resolve().parent
     st.markdown(f"""
     <div class="error-message">
         <h2>ERRO: Arquivo '{GAME_HTML_ENTRY_POINT}' não encontrado</h2>
-        <p>Verifique se o arquivo está no diretório correto: {game_files_directory}</p>
+        <p>Diretório atual: {current_dir}</p>
+        <p>Arquivos encontrados:</p>
+        <ul>
+            {"".join([f"<li>{f}</li>" for f in os.listdir(current_dir)])}
+        </ul>
     </div>
     """, unsafe_allow_html=True)
     st.stop()
+
+# Converter imagem para base64
+mesa_image_path = Path(game_files_directory) / "mesa.png"
+mesa_base64 = get_base64_image(mesa_image_path)
 
 # Detectar ambiente e configurar URL apropriada
 is_local = is_local_environment()
