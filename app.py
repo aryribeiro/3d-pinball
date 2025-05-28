@@ -246,7 +246,7 @@ if st.session_state.game_started:
                 padding-right: 0;
                 margin: 0;
                 display: block;
-                width: 100%;
+                width: 50%;
                 height: 100vh;
             }}
             
@@ -387,7 +387,7 @@ if st.session_state.game_started:
     </html>
     """
     
-    components.html(game_html, height=500, scrolling=False)
+    components.html(game_html, height=600, scrolling=False)
 else:
     # Mostrar imagem
     st.markdown(f"""
