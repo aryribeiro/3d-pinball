@@ -1,9 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
-from pathlib import Path
 import base64
-import os
-import re
+from pathlib import Path
 
 # --- Configurações Globais ---
 GAME_HTML_ENTRY_POINT = "index.html"
@@ -22,18 +20,18 @@ def get_base64_image(image_path):
     except:
         return None
 
-# --- Função para converter arquivo para base64 ---
-def get_base64_file(file_path):
+# --- Função para ler arquivo HTML ---
+def read_html_file(file_path):
     try:
-        with open(file_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
     except:
         return None
 
 # --- Configuração da Página Streamlit ---
-st.set_page_config(page_title=APP_TITLE, layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title=APP_TITLE, layout="wide", initial_sidebar_state="collapsed")
 
-# Diretório dos arquivos do jogo
+# Converter imagem para base64
 game_files_directory = str(Path(__file__).resolve().parent)
 mesa_image_path = Path(game_files_directory) / "mesa.png"
 mesa_base64 = get_base64_image(mesa_image_path)
@@ -143,9 +141,10 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Verificar se arquivo existe ---
+# --- Lógica Principal ---
 path_to_index_html = Path(game_files_directory) / GAME_HTML_ENTRY_POINT
 
+# Verificar se arquivo existe
 if not path_to_index_html.is_file():
     st.markdown(f"""
     <div class="error-message">
@@ -155,7 +154,19 @@ if not path_to_index_html.is_file():
     """, unsafe_allow_html=True)
     st.stop()
 
-# --- Interface Principal ---
+# Ler conteúdo do HTML
+html_content = read_html_file(path_to_index_html)
+if not html_content:
+    st.markdown(f"""
+    <div class="error-message">
+        <h2>ERRO: Não foi possível ler o arquivo '{GAME_HTML_ENTRY_POINT}'</h2>
+        <p>Verifique as permissões do arquivo</p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.stop()
+
+# Interface principal
+# Header fixo com título e botão
 st.markdown(f"""
 <div class="game-header">
     <h1 class="game-title">{APP_TITLE}</h1>
@@ -171,125 +182,21 @@ with col2:
 
 # Conteúdo principal
 if st.session_state.game_started:
-    try:
-        # Ler o arquivo HTML principal
-        with open(path_to_index_html, 'r', encoding='utf-8') as f:
-            html_content = f.read()
-        
-        game_dir = Path(game_files_directory)
-        
-        # Função para processar e embdar arquivos
-        def embed_files_in_html(html_content, base_dir):
-            # Processar arquivos JavaScript
-            js_pattern = r'<script[^>]*src="([^"]*\.js)"[^>]*></script>'
-            for match in re.finditer(js_pattern, html_content):
-                js_file = match.group(1)
-                js_path = base_dir / js_file
-                if js_path.exists():
-                    try:
-                        with open(js_path, 'r', encoding='utf-8') as js_f:
-                            js_content = js_f.read()
-                        html_content = html_content.replace(
-                            match.group(0), 
-                            f'<script>\n{js_content}\n</script>'
-                        )
-                    except:
-                        pass
-            
-            # Processar arquivos CSS
-            css_pattern = r'<link[^>]*href="([^"]*\.css)"[^>]*>'
-            for match in re.finditer(css_pattern, html_content):
-                css_file = match.group(1)
-                css_path = base_dir / css_file
-                if css_path.exists():
-                    try:
-                        with open(css_path, 'r', encoding='utf-8') as css_f:
-                            css_content = css_f.read()
-                        html_content = html_content.replace(
-                            match.group(0), 
-                            f'<style>\n{css_content}\n</style>'
-                        )
-                    except:
-                        pass
-            
-            # Processar arquivos WASM como base64
-            wasm_pattern = r'(["\']?)([^"\']*\.wasm)\1'
-            for match in re.finditer(wasm_pattern, html_content):
-                wasm_file = match.group(2)
-                if not wasm_file.startswith('data:'):
-                    wasm_path = base_dir / wasm_file
-                    if wasm_path.exists():
-                        wasm_base64 = get_base64_file(wasm_path)
-                        if wasm_base64:
-                            data_url = f'data:application/wasm;base64,{wasm_base64}'
-                            html_content = html_content.replace(
-                                match.group(0), 
-                                f'{match.group(1)}{data_url}{match.group(1)}'
-                            )
-            
-            # Processar outros recursos (imagens, data files)
-            resource_pattern = r'(["\']?)([^"\']*\.(png|jpg|jpeg|gif|ico|data|mem))\1'
-            for match in re.finditer(resource_pattern, html_content):
-                resource_file = match.group(2)
-                if not resource_file.startswith('data:') and not resource_file.startswith('http'):
-                    resource_path = base_dir / resource_file
-                    if resource_path.exists():
-                        resource_base64 = get_base64_file(resource_path)
-                        if resource_base64:
-                            ext = resource_file.split('.')[-1].lower()
-                            mime_types = {
-                                'png': 'image/png',
-                                'jpg': 'image/jpeg', 
-                                'jpeg': 'image/jpeg',
-                                'gif': 'image/gif',
-                                'ico': 'image/x-icon',
-                                'data': 'application/octet-stream',
-                                'mem': 'application/octet-stream'
-                            }
-                            mime_type = mime_types.get(ext, 'application/octet-stream')
-                            data_url = f'data:{mime_type};base64,{resource_base64}'
-                            html_content = html_content.replace(
-                                match.group(0),
-                                f'{match.group(1)}{data_url}{match.group(1)}'
-                            )
-            
-            return html_content
-        
-        # Processar o HTML
-        processed_html = embed_files_in_html(html_content, game_dir)
-        
-        # Adicionar CSS para fullscreen
-        processed_html = processed_html.replace(
-            '<head>',
-            f'''<head>
-            <style>
-                body, html {{
-                    margin: 0;
-                    padding: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    overflow: hidden;
-                    background-color: {PAGE_BACKGROUND_COLOR};
-                }}
-                canvas {{
-                    display: block;
-                    margin: 0 auto;
-                }}
-            </style>'''
-        )
-        
-        # Renderizar o jogo
-        components.html(processed_html, height=680, scrolling=False)
-        
-    except Exception as e:
-        st.error(f"Erro ao carregar o jogo: {str(e)}")
-        st.markdown(f"""
-        <div class="error-message">
-            <h2>Erro ao processar arquivos do jogo</h2>
-            <p>Detalhes: {str(e)}</p>
-            <p>Verifique se todos os arquivos necessários estão no diretório.</p>
-        </div>
-        """, unsafe_allow_html=True)
+    # Modificar o HTML para usar caminhos relativos corretos
+    modified_html = html_content.replace(
+        'src="', 
+        f'src="./'
+    ).replace(
+        'href="',
+        f'href="./'
+    )
+    
+    # Embed o jogo diretamente usando components.html
+    components.html(
+        modified_html,
+        height=800,
+        scrolling=False
+    )
 else:
     # Mostrar imagem do jogo
     st.markdown(f"""
@@ -299,10 +206,11 @@ else:
     """, unsafe_allow_html=True)
 
 st.markdown("""
-<div style="text-align: center;">
-  <div style="color: white;">
+<div style="text-align: center; margin-top: 20px;">
+  <div style="color: white; font-size: 14px;">
   💬 Por <strong>Ary Ribeiro</strong>. Obs.: fork da Alula. Código original no GitHub: 
   <a href="https://github.com/alula/SpaceCadetPinball/tree/gh-pages" style="color: white;">AQUI</a><br>
-  <em>Obs.: Use o mouse p/ controlar</em>
+  <em>Use o mouse para controlar</em>
+  </div>
 </div>
 """, unsafe_allow_html=True)
