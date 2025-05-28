@@ -93,7 +93,7 @@ st.markdown(f"""
     }}
     
     .game-image {{
-        max-width: 90vw;
+        max-width: 60vw;
         max-height: 70vh;
         width: auto;
         height: auto;
@@ -170,7 +170,7 @@ st.markdown(f"""
 # Botão centralizado
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
-    if st.button("INICIAR JOGO", key="start_game"):
+    if st.button("🌑INICIAR JOGO", key="start_game"):
         st.session_state.game_started = True
         st.rerun()
 
