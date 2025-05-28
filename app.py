@@ -183,17 +183,47 @@ def is_local_environment():
     ])
 
 # --- Lógica Principal ---
+# Debug: listar arquivos disponíveis
+current_dir = Path(__file__).resolve().parent
+static_dir = current_dir / "static"
+
+st.write("DEBUG - Diretório atual:", str(current_dir))
+st.write("DEBUG - Diretório static:", str(static_dir))
+st.write("DEBUG - Arquivos no diretório atual:", list(current_dir.glob("*")))
+if static_dir.exists():
+    st.write("DEBUG - Arquivos no diretório static:", list(static_dir.glob("*")))
+
 path_to_index_html = Path(game_files_directory) / GAME_HTML_ENTRY_POINT
 
 # Verificar se arquivo existe
 if not path_to_index_html.is_file():
-    st.markdown(f"""
-    <div class="error-message">
-        <h2>ERRO: Arquivo '{GAME_HTML_ENTRY_POINT}' não encontrado</h2>
-        <p>Verifique se o arquivo está no diretório correto: {game_files_directory}</p>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
+    # Tentar encontrar o arquivo em outros locais
+    possible_paths = [
+        current_dir / GAME_HTML_ENTRY_POINT,
+        static_dir / GAME_HTML_ENTRY_POINT,
+        current_dir / "static" / GAME_HTML_ENTRY_POINT
+    ]
+    
+    found_path = None
+    for path in possible_paths:
+        if path.is_file():
+            found_path = path
+            game_files_directory = str(path.parent)
+            path_to_index_html = path
+            break
+    
+    if not found_path:
+        st.markdown(f"""
+        <div class="error-message">
+            <h2>ERRO: Arquivo '{GAME_HTML_ENTRY_POINT}' não encontrado</h2>
+            <p>Procurado em: {game_files_directory}</p>
+            <p>Caminhos testados:</p>
+            <ul>
+                {"".join([f"<li>{path}</li>" for path in possible_paths])}
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        st.stop()
 
 # Detectar ambiente e configurar URL apropriada
 is_local = is_local_environment()
